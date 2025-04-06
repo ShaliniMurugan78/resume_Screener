@@ -1,0 +1,64 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = "resume-screener"
+        DOCKER_REGISTRY = "your-dockerhub-username/${IMAGE_NAME}"
+    }
+
+    stages {
+        stage('Clone Repo') {
+            steps {
+                git 'https://your-repo-url.git'
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                sh 'pip install -r requirements.txt'
+            }
+        }
+
+        stage('Run Unit Tests') {
+            steps {
+                sh 'pytest'  // Optional: Only if you have test files
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh "docker build -t ${IMAGE_NAME} ."
+                }
+            }
+        }
+
+        stage('Push to DockerHub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
+                    script {
+                        sh "echo $DOCKERHUB_PASS | docker login -u $DOCKERHUB_USER --password-stdin"
+                        sh "docker tag ${IMAGE_NAME} ${DOCKER_REGISTRY}"
+                        sh "docker push ${DOCKER_REGISTRY}"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy (Optional)') {
+            steps {
+                echo "Deployment steps can go here"
+                // For example: SSH to server, pull new image, restart container, etc.
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Pipeline completed successfully!"
+        }
+        failure {
+            echo "Pipeline failed!"
+        }
+    }
+}
