@@ -2,6 +2,7 @@ from flask import Flask, request, render_template
 import pickle
 
 app = Flask(__name__)
+print("HI")
 
 # Load model, vectorizer, and label encoder
 with open('models.pkl', 'rb') as f:
